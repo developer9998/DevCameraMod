@@ -6,7 +6,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace DevCameraMod
+namespace DevCameraMod.Scripts
 {
     public class TagObject : MonoBehaviour
     {

@@ -338,10 +338,12 @@ namespace DevCameraMod
             cameraUI.rightTeam = uiObject.transform.Find("TeamName2").GetComponent<Text>();
             cameraUI.currentTime = uiObject.transform.Find("CurrentTime").GetComponent<Text>();
             cameraUI.lapTime = uiObject.transform.Find("CurrentTime (1)").GetComponent<Text>();
-            cameraUI.currentSpecImage = uiObject.GetComponentInChildren<RawImage>();
+            cameraUI.currentSpecImage = uiObject.transform.Find("RawImage").GetComponent<RawImage>();
             cameraUI.scoreboardText = uiObject.transform.Find("board1").GetComponent<Text>();
             cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
+            cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
 
+            cameraUI.versionTex.text = "v" + PluginInfo.Version;
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
             cameraUI.rightTeam.text = "null";
@@ -646,7 +648,7 @@ namespace DevCameraMod
                     if (toRig != null)
                     {
                         float distBetween = Vector3.Distance(currentToStare.headMesh.transform.position, toRig.headMesh.transform.position);
-                        if (distBetween < 4.5f) return;
+                        if (distBetween < infectedGorillas.Count / 4f) return;
                     }
                     if (toRig == currentToFollow)
                     {
@@ -830,7 +832,7 @@ namespace DevCameraMod
                     if (toRig != null)
                     {
                         float distBetween = Vector3.Distance(currentToStare.headMesh.transform.position, toRig.headMesh.transform.position);
-                        if (distBetween < 4.5f) return;
+                        if (distBetween < infectedGorillas.Count / 4f) return;
                     }
                     if (toRig == currentToFollow)
                     {
@@ -1006,19 +1008,19 @@ namespace DevCameraMod
 
             if (cameraUI.canvas.enabled)
             {
-                if (Keyboard.current.zKey.wasPressedThisFrame) cameraUI.AdjustTeam(true, true);
-                if (Keyboard.current.xKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, true);
-                if (Keyboard.current.cKey.wasPressedThisFrame) cameraUI.AdjustTeam(true, false);
-                if (Keyboard.current.vKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, false);
-                if (Keyboard.current.qKey.wasPressedThisFrame) timeStart = timeStart = true;
-                if (Keyboard.current.eKey.wasPressedThisFrame) timeStart = timeStart = !timeStart;
-                if (Keyboard.current.rKey.wasPressedThisFrame)
+                if (Keyboard.current.fKey.wasPressedThisFrame) cameraUI.AdjustTeam(true, true);
+                if (Keyboard.current.gKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, true);
+                if (Keyboard.current.hKey.wasPressedThisFrame) cameraUI.AdjustTeam(true, false);
+                if (Keyboard.current.jKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, false);
+                if (Keyboard.current.vKey.wasPressedThisFrame) timeStart = timeStart = true;
+                if (Keyboard.current.bKey.wasPressedThisFrame) timeStart = timeStart = !timeStart;
+                if (Keyboard.current.nKey.wasPressedThisFrame)
                 {
                     timeStart = false;
                     currentTime = -10;
                     hasPassedzero = false;
                 }
-                if (Keyboard.current.tKey.wasPressedThisFrame) UpdateLap();
+                if (Keyboard.current.mKey.wasPressedThisFrame) UpdateLap();
 
                 if (currentTime >= lapTime) cameraUI.lapTime.color = Color.green;
                 else cameraUI.lapTime.color = Color.red;

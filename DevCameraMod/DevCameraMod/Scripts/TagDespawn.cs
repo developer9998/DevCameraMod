@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace DevCameraMod
+namespace DevCameraMod.Scripts
 {
     public class TagDespawn : MonoBehaviour
     {

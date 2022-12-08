@@ -19,6 +19,7 @@ namespace DevCameraMod.Models
         public Text lapTime;
         public Text scoreboardText;
         public Text scoreboardText2;
+        public Text versionTex;
         public double timeStamp;
 
         public string LeftTeamName = "null";
