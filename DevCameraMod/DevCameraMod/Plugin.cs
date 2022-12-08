@@ -244,13 +244,13 @@ namespace DevCameraMod
                         GUI.Label(new Rect(60, optionPosition, 160, 20), $"Right team: {cameraUI.LeftTeamName}");
                         string rightTeamName = GUI.TextArea(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), cameraUI.RightTeamName, 200);
 
-                        if (teamName.Length <= 5 && lastLeftName != teamName)
+                        if (teamName.Length <= 7 && lastLeftName != teamName)
                         {
                             cameraUI.LeftTeamName = teamName.Replace(System.Environment.NewLine, "");
                             cameraUI.leftTeam.text = cameraUI.LeftTeamName;
                         }
 
-                        if (rightTeamName.Length <= 5 && lastRightName != rightTeamName)
+                        if (rightTeamName.Length <= 7 && lastRightName != rightTeamName)
                         {
                             cameraUI.RightTeamName = rightTeamName.Replace(System.Environment.NewLine, "");
                             cameraUI.rightTeam.text = cameraUI.RightTeamName;
