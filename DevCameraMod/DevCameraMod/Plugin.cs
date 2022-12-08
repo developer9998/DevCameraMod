@@ -988,14 +988,14 @@ namespace DevCameraMod
                         if (GorillaParent.instance.vrrigs[i].setMatIndex == 0)
                         {
                             string col = ColorUtility.ToHtmlStringRGBA(GorillaParent.instance.vrrigs[i].materialsToChangeTo[0].color);
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i + 1}<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            else cameraUI.scoreboardText.text += $"{i + 1}<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
                         }
                         else
                         {
                             string col = "751C00";
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i + 1}<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            else cameraUI.scoreboardText.text += $"{i + 1}<color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
                         }
                     }
                 }
