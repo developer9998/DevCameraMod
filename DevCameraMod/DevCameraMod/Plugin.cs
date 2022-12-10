@@ -1064,8 +1064,8 @@ namespace DevCameraMod
                     if (Keyboard.current.sKey.isPressed) rawVelocity += camera.transform.forward * currentSpeed * currentMultiplier * 0.015f * -1;
                     if (Keyboard.current.dKey.isPressed) rawVelocity += camera.transform.right * currentSpeed * currentMultiplier * 0.015f;
                     if (Keyboard.current.aKey.isPressed) rawVelocity += camera.transform.right * currentSpeed * currentMultiplier * 0.015f * -1;
-                    if (Keyboard.current.fKey.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f;
-                    if (Keyboard.current.gKey.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f * -1;
+                    if (Keyboard.current.qKey.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f;
+                    if (Keyboard.current.eKey.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f * -1;
 
                     if (Keyboard.current.upArrowKey.isPressed) rawEulerAngles += new Vector2(currentSpeed * currentMultiplier * 0.015f * -1 * rotationMultiplier, 0);
                     if (Keyboard.current.downArrowKey.isPressed) rawEulerAngles += new Vector2(currentSpeed * currentMultiplier * 0.015f * rotationMultiplier, 0);
