@@ -132,6 +132,7 @@ namespace DevCameraMod
 
         public AudioListener playerListener;
         public AudioListener cameraListener;
+        public bool nameTags = true;
 
         internal void Awake()
         {
@@ -991,6 +992,7 @@ namespace DevCameraMod
 
             if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 2, 7);
             if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 7, 7);
+            if (Keyboard.current.f2Key.wasPressedThisFrame) nameTags = !nameTags;
 
             if (PhotonNetwork.InRoom)
             {
@@ -1004,14 +1006,14 @@ namespace DevCameraMod
                         if (GorillaParent.instance.vrrigs[i].setMatIndex == 0)
                         {
                             string col = ColorUtility.ToHtmlStringRGBA(GorillaParent.instance.vrrigs[i].materialsToChangeTo[0].color);
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i + 1}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"{i + 1}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            else cameraUI.scoreboardText.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
                         }
                         else
                         {
                             string col = "751C00";
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i + 1}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"{i + 1}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                            else cameraUI.scoreboardText.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
                         }
                     }
                 }
