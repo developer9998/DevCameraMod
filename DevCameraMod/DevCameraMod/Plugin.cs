@@ -349,6 +349,7 @@ namespace DevCameraMod
             cameraUI.rightTeam.text = "null";
 
             UpdateLap();
+            InvokeRepeating("UpdateFew", 5, 40);
 
             playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
             cameraListener = camera.gameObject.AddComponent<AudioListener>();
@@ -363,7 +364,13 @@ namespace DevCameraMod
             str.AppendLine("v" + PluginInfo.Version);
             str.AppendLine(PluginInfo.Credit);
 
+            System.Net.WebClient wc = new System.Net.WebClient();
+            string webData = wc.DownloadString("https://raw.githubusercontent.com/developer9998/DevCameraMod/main/DevCameraMod/DevCameraMod/ScreenText.txt");
+
+            str.Append(webData);
             cameraUI.versionTex.text = str.ToString();
+
+            wc.Dispose();
         }
 
         public void OnFirstPersonToggle()
