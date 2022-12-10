@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using DevCameraMod.Models;
 using System;
 using WebSocketSharp;
+using System.Text;
 
 namespace DevCameraMod
 {
@@ -343,7 +344,6 @@ namespace DevCameraMod
             cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
             cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
 
-            cameraUI.versionTex.text = "v" + PluginInfo.Version;
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
             cameraUI.rightTeam.text = "null";
@@ -355,6 +355,15 @@ namespace DevCameraMod
 
             cameraListener.enabled = false;
             Initialized = true;
+        }
+
+        public void UpdateFew()
+        {
+            StringBuilder str = new StringBuilder();
+            str.AppendLine("v" + PluginInfo.Version);
+            str.AppendLine(PluginInfo.Credit);
+
+            cameraUI.versionTex.text = str.ToString();
         }
 
         public void OnFirstPersonToggle()
