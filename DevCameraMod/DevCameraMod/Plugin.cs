@@ -35,6 +35,9 @@ namespace DevCameraMod
         public CinemachineVirtualCamera virtualCamera;
         public GameObject previewObject;
 
+        public AudioClip type;
+        public AudioClip click;
+
         public Vector3 cameraPosition;
         public Vector2 cameraRotation;
         public Quaternion cR3;
@@ -148,7 +151,7 @@ namespace DevCameraMod
                 if (PhotonNetwork.InRoom) intMode = Mathf.Clamp(intMode - 1, 0, PhotonNetwork.CurrentRoom.IsVisible ? minConstraints : maxConstaints);
                 else intMode = Mathf.Clamp(intMode - 1, 0, minConstraints);
                 cameraMode = (CameraModes)intMode;
-                GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(GorillaLocomotion.Player.Instance.materialData[66].audio);
+                if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                 OnModeChange();
                 return;
             }
@@ -156,7 +159,7 @@ namespace DevCameraMod
             if (PhotonNetwork.InRoom) intMode = Mathf.Clamp(intMode + 1, 0, PhotonNetwork.CurrentRoom.IsVisible ? minConstraints : maxConstaints);
             else intMode = Mathf.Clamp(intMode + 1, 0, minConstraints);
             cameraMode = (CameraModes)intMode;
-            GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(GorillaLocomotion.Player.Instance.materialData[66].audio);
+            if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
             OnModeChange();
         }
 
@@ -164,7 +167,11 @@ namespace DevCameraMod
         {
             if (ShowMenu)
             {
-                if (GUI.Button(new Rect(25, 25, 180, 20), "DevCameraMod")) ShowFrame = !ShowFrame;
+                if (GUI.Button(new Rect(25, 25, 180, 20), "DevCameraMod"))
+                {
+                    if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
+                    ShowFrame = !ShowFrame;
+                }
 
                 if (ShowFrame)
                 {
@@ -191,14 +198,14 @@ namespace DevCameraMod
                     if (GUI.Button(new Rect(25 + 5, 150, 20, 20), "<"))
                     {
                         intMask = Mathf.Clamp(intMask - 1, 0, 1);
-                        GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(GorillaLocomotion.Player.Instance.materialData[66].audio);
+                        if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                         camera.cullingMask = fixedCameras[intMask];
                     }
 
                     if (GUI.Button(new Rect(180 - 5, 150, 20, 20), ">"))
                     {
                         intMask = Mathf.Clamp(intMask + 1, 0, 1);
-                        GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(GorillaLocomotion.Player.Instance.materialData[66].audio);
+                        if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                         camera.cullingMask = fixedCameras[intMask];
                     }
 
@@ -248,12 +255,14 @@ namespace DevCameraMod
 
                         if (teamName.Length <= 7 && lastLeftName != teamName)
                         {
+                            if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
                             cameraUI.LeftTeamName = teamName.Replace(System.Environment.NewLine, "");
                             cameraUI.leftTeam.text = cameraUI.LeftTeamName;
                         }
 
                         if (rightTeamName.Length <= 7 && lastRightName != rightTeamName)
                         {
+                            if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
                             cameraUI.RightTeamName = rightTeamName.Replace(System.Environment.NewLine, "");
                             cameraUI.rightTeam.text = cameraUI.RightTeamName;
                         }
@@ -276,6 +285,7 @@ namespace DevCameraMod
 
                             if (lobbyTemp.Length <= 12 && lastLobby != lobbyTemp)
                             {
+                                if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
                                 lobbyToEnter = lobbyTemp.Replace(Environment.NewLine, "").ToUpper();
                             }
 
@@ -283,6 +293,7 @@ namespace DevCameraMod
 
                             if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Join"))
                             {
+                                if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                                 if (!GorillaComputer.instance.CheckAutoBanListForName(lobbyToEnter)) return;
                                 if (lobbyToEnter.IsNullOrEmpty()) return;
                                 PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(lobbyToEnter);
@@ -292,6 +303,7 @@ namespace DevCameraMod
                         {
                             if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Leave"))
                             {
+                                if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                                 PhotonNetworkController.Instance.AttemptDisconnect();
                             }
                         }
@@ -325,6 +337,10 @@ namespace DevCameraMod
 
             Stream str = Assembly.GetExecutingAssembly().GetManifestResourceStream("DevCameraMod.Resources.devcameraui");
             AssetBundle bundle = AssetBundle.LoadFromStream(str);
+
+            type = bundle.LoadAsset<AudioClip>("click");
+            click = bundle.LoadAsset<AudioClip>("button");
+
             GameObject uiObject = Instantiate(bundle.LoadAsset<GameObject>("DevCameraUI"));
 
             nametagBase = bundle.LoadAsset<GameObject>("NametagBase");
@@ -376,6 +392,7 @@ namespace DevCameraMod
 
         public void OnFirstPersonToggle()
         {
+            if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
             camera.transform.SetParent(cameraParent, false);
             updateHideCosmetics = true;
         }
@@ -979,7 +996,11 @@ namespace DevCameraMod
         {
             if (!Initialized) return;
 
-            if (Keyboard.current.f4Key.wasPressedThisFrame) ShowMenu = !ShowMenu;
+            if (Keyboard.current.f4Key.wasPressedThisFrame)
+            {
+                ShowMenu = !ShowMenu;
+                if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
+            }
 
             editClipPlane = cameraMode == CameraModes.Default ? Mathf.Lerp(editClipPlane, 0.01f, 0.075f) : Mathf.Lerp(editClipPlane, clipPlane, 0.075f);
             camera.nearClipPlane= editClipPlane;
@@ -992,7 +1013,12 @@ namespace DevCameraMod
 
             if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 2, 7);
             if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 7, 7);
-            if (Keyboard.current.f2Key.wasPressedThisFrame) nameTags = !nameTags;
+
+            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            {
+                nameTags = !nameTags;
+                if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
+            }
 
             if (PhotonNetwork.InRoom)
             {
@@ -1051,7 +1077,7 @@ namespace DevCameraMod
                 string patchedMinutes = timeSpan.Minutes.ToString();
                 string patchedHours = timeSpan.Hours.ToString(); // no way lmao
 
-                if (patchedSeconds == "0" && !hasPassedzero)
+                if (patchedMilliseconds == "0" && !hasPassedzero)
                 {
                     hasPassedzero = true;
                     currentTime = 00;

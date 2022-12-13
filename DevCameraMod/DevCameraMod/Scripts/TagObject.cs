@@ -35,9 +35,9 @@ namespace DevCameraMod.Scripts
                 tex.text = rig.playerText.text;
                 tex.color = rig.setMatIndex == 0 ? rig.materialsToChangeTo[0].color : new Color(0.4588235f, 0.1098039f, 0);
 
-                if (PhotonNetwork.InRoom && rig.isOfflineVRRig) canv.enabled = false;
-                else if (!PhotonNetwork.InRoom & rig.isOfflineVRRig) canv.enabled = Plugin.Instance.nameTags;
-                else if (!rig.isOfflineVRRig) canv.enabled = Plugin.Instance.nameTags;
+                if (PhotonNetwork.InRoom && rig.isOfflineVRRig) tex.enabled = false;
+                else if (!PhotonNetwork.InRoom & rig.isOfflineVRRig) tex.enabled = Plugin.Instance.nameTags;
+                else if (!rig.isOfflineVRRig) tex.enabled = Plugin.Instance.nameTags;
             }
         }
     }
