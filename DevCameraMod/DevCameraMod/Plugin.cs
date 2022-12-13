@@ -132,7 +132,7 @@ namespace DevCameraMod
 
         public AudioListener playerListener;
         public AudioListener cameraListener;
-        public bool nameTags = true;
+        public bool nameTags = false;
 
         internal void Awake()
         {
