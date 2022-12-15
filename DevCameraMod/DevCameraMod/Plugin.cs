@@ -11,7 +11,6 @@ using System.Reflection;
 using System.Collections.Generic;
 using DevCameraMod.Models;
 using System;
-using WebSocketSharp;
 using System.Text;
 
 namespace DevCameraMod
@@ -295,7 +294,7 @@ namespace DevCameraMod
                             {
                                 if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                                 if (!GorillaComputer.instance.CheckAutoBanListForName(lobbyToEnter)) return;
-                                if (lobbyToEnter.IsNullOrEmpty()) return;
+                                if (lobbyToEnter == "") return;
                                 PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(lobbyToEnter);
                             }
                         }
