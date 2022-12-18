@@ -1086,7 +1086,7 @@ namespace DevCameraMod
                 if (patchedMilliseconds == "0" && !hasPassedzero)
                 {
                     hasPassedzero = true;
-                    currentTime = 00;
+                    
                 }
 
                 string fixedSeconds = $"{(patchedMinutes != "0" ? (patchedSeconds.Length == 1 ? string.Format("0{0}", patchedSeconds) : patchedSeconds) : patchedSeconds)}";
