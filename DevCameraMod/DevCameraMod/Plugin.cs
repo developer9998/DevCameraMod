@@ -74,6 +74,11 @@ namespace DevCameraMod
         public bool firstperson;
         public bool updateHideCosmetics = true;
 
+
+        public float forward = -1.38f;
+        public float right = 0.3566f;
+        public float up = 0.8648f;
+
         public float cameraLerp = 0.07f;
         public float quatLerp = 0.085f;
         public float editFOV = 60;
@@ -369,9 +374,11 @@ namespace DevCameraMod
 
             playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
             cameraListener = camera.gameObject.AddComponent<AudioListener>();
+            Debug.unityLogger.logEnabled = false;
 
             cameraListener.enabled = false;
             Initialized = true;
+
         }
 
         public void UpdateFew()
@@ -954,19 +961,19 @@ namespace DevCameraMod
 
         public Vector3 GetPositionBasedOnRig(VRRig rig)
         {
-            Transform head = rig.headMesh.transform;
-            Vector3 position = head.position + head.forward * 1.75f * -1;
+            Transform head = rig.headMesh.transform.parent;
+            Vector3 position = head.position;
 
-            position += rig.headMesh.transform.right * 0.25f;
-            position += rig.headMesh.transform.up * 0.1f;
+            position += head.forward * forward;
+            position += head.right * right;
+            position += head.up * up;
             return position;
         }
 
         public Quaternion GetRotationBasedOnRig(VRRig rig)
         {
             Transform head = rig.headMesh.transform;
-            Vector3 position = head.position + head.forward * 1.75f * -1;
-            position += -rig.headMesh.transform.up * 0.275f;
+            Vector3 position = GetPositionBasedOnRig(rig);
 
             Vector3 relativePos = head.position - position;
             Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
@@ -1123,6 +1130,16 @@ namespace DevCameraMod
 
                     camera.transform.position = finalPos;
                     camera.transform.eulerAngles = finalRot;
+                }
+
+                if (cameraMode == CameraModes.DefEnhanced)
+                {
+                    if (Keyboard.current.wKey.isPressed) forward += ((currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime) * 0.01f;
+                    if (Keyboard.current.sKey.isPressed) forward += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
+                    if (Keyboard.current.dKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
+                    if (Keyboard.current.aKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.01f;
+                    if (Keyboard.current.qKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
+                    if (Keyboard.current.eKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.01f;
                 }
             }
             catch(System.Exception e)
