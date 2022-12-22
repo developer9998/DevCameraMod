@@ -6,12 +6,14 @@ using DevCameraMod.Models;
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using System.Net;
+using System.Threading;
+using Photon.Voice.PUN;
 
 namespace DevCameraMod
 {
@@ -101,6 +103,7 @@ namespace DevCameraMod
         public bool ShowFrame;
         public bool shouldBeEnabled;
         public bool canBeShown = true;
+        public WebClient webClient;
 
         // Lap system
         public double currentTime = -10;
@@ -126,10 +129,10 @@ namespace DevCameraMod
 
         public Dictionary<CameraModes, string> fixedCameraModeName = new Dictionary<CameraModes, string>()
         {
-            { CameraModes.Default, "Default" },
+            { CameraModes.Default, "Regular" },
             { CameraModes.DefEnhanced, "Enhanced" },
-            { CameraModes.FP, "FirstPerson" },
-            { CameraModes.Freecam, "FreeCam" },
+            { CameraModes.FP, "First Person" },
+            { CameraModes.Freecam, "Spectator" },
             { CameraModes.SelectedPlayer, "PlayerFocus" },
             { CameraModes.ActivitySpan, "RandomFocus" },
             { CameraModes.SurvivorFocus, "SurvivorFocus" },
@@ -187,13 +190,13 @@ namespace DevCameraMod
             cameraUI.scoreboardText = uiObject.transform.Find("board1").GetComponent<Text>();
             cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
             cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
+            cameraUI.version2 = uiObject.transform.Find("VersionTexA").GetComponent<Text>();
 
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
             cameraUI.rightTeam.text = "null";
 
             UpdateLap();
-            InvokeRepeating("UpdateFew", 5, 20);
 
             playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
             cameraListener = camera.gameObject.AddComponent<AudioListener>();
@@ -201,6 +204,27 @@ namespace DevCameraMod
 
             cameraListener.enabled = false;
             Initialized = true;
+
+            Thread thread = new Thread(UpdateThead);
+            thread.Start();
+        }
+
+        void UpdateThead()
+        {
+            Thread.Sleep(1000);
+            webClient = new WebClient();
+            try
+            {
+                while (true)
+                {
+                    Thread.Sleep(5000);
+                    string webData = webClient.DownloadString("https://raw.githubusercontent.com/developer9998/DevCameraMod/main/DevCameraMod/DevCameraMod/ScreenText.txt");
+
+                    cameraUI.versionTex.text = webData;
+                    cameraUI.version2.text = PluginInfo.Name + " v" + PluginInfo.Version;
+                }
+            }
+            finally { webClient.Dispose(); }
         }
 
         internal void SwitchModePress(bool leftButton, int minConstraints, int maxConstaints)
@@ -222,11 +246,12 @@ namespace DevCameraMod
             OnModeChange();
         }
 
+        [STAThread]
         protected void OnGUI()
         {
             if (ShowMenu)
             {
-                if (GUI.Button(new Rect(25, 25, 180, 20), "DevCameraMod"))
+                if (GUI.Button(new Rect(25, 25, 180, 20), $"{(!ShowFrame ? "Open" : "Close")} Spectator Menu"))
                 {
                     if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                     ShowFrame = !ShowFrame;
@@ -236,15 +261,18 @@ namespace DevCameraMod
                 {
                     int modesWhenNotInRoom = 2;
                     int moesWhenInRoom = 7;
-                    GUI.Box(new Rect(25, 60, 180, canvasScaleCurrent), "Dev's Camera Mod");
+                    GUI.Box(new Rect(25, 60, 180, canvasScaleCurrent), "Dev's Camera Mod v" + PluginInfo.Version);
 
                     GUI.Label(new Rect((180 / 2) - 30, 100, 180, 20), fixedCameraModeName[cameraMode]);
 
                     if (GUI.Button(new Rect(25 + 5, 100, 20, 20), "<")) SwitchModePress(true, modesWhenNotInRoom, moesWhenInRoom);
                     if (GUI.Button(new Rect(180 - 5, 100, 20, 20), ">")) SwitchModePress(false, modesWhenNotInRoom, moesWhenInRoom);
 
-                    if (!PhotonNetwork.InRoom) GUI.Label(new Rect(35, 125, 180, 20), "<color=red>Join a private for all modes</color>");
-                    else if (PhotonNetwork.CurrentRoom.IsVisible) GUI.Label(new Rect(35, 125, 180, 20), "<color=red>Join a private for all modes</color>");
+                    bool lab = false;
+                    if (!PhotonNetwork.InRoom) lab = true;
+                    else if (PhotonNetwork.CurrentRoom.IsVisible) lab = true;
+
+                    if (lab) GUI.Label(new Rect(35, 125, 180, 20), "<color=red>Join a private for all modes</color>");
 
                     GUI.Label(new Rect((180 / 2) - 35, 150, 180, 20), $"Culling: {fixedCameraNames[intMask]}");
                     if (GUI.Button(new Rect(25 + 5, 150, 20, 20), "<"))
@@ -286,9 +314,6 @@ namespace DevCameraMod
                         GUI.Label(new Rect(50, optionPosition, 160, 70), $"  FOV            Clipping");
                         FOV = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), FOV, 30f, 160f);
                         clipPlane = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), clipPlane, 0.01f, 0.5f);
-                        optionPosition += 50;
-                        GUI.Label(new Rect(60, optionPosition, 160, 20), $"First person: {(firstperson ? "On" : "Off")}");
-                        float flow = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), firstperson == true ? 1 : 0, 0, 1);
 
                         optionPosition += 50;
                         GUI.Label(new Rect(60, optionPosition, 160, 20), $"Camera listener: {(listener ? "On" : "Off")}");
@@ -317,8 +342,6 @@ namespace DevCameraMod
                         }
 
                         listener = listenerFloat == 1;
-                        firstperson = flow == 1;
-                        if (lastPerson != firstperson) OnFirstPersonToggle();
 
                         canvasSize = optionPosition;
                     }
@@ -345,19 +368,43 @@ namespace DevCameraMod
                             string[] loadingNames = new string[2] { "Initialization", "DeterminingPingsAndPlayerCount" };
 
                             if (PhotonNetworkController.Instance == null) joinText = "Connecting";
-                            else joinText = joiningNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Joining" : (loadingNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Connecting" : "Join");
+                            else joinText = joiningNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Cancel" : (loadingNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Connecting" : "Join");
 
-                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), joinText) && joinText == "Join")
+                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), joinText))
                             {
-                                if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
-                                if (!GorillaComputer.instance.CheckAutoBanListForName(lobbyToEnter)) return;
-                                if (lobbyToEnter.IsNullOrWhiteSpace()) return;
-                                PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(lobbyToEnter);
+                                if (joinText == "Join")
+                                {
+                                    if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
+                                    if (!GorillaComputer.instance.CheckAutoBanListForName(lobbyToEnter)) return;
+                                    if (lobbyToEnter.IsNullOrWhiteSpace()) return;
+                                    PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(lobbyToEnter);
+                                }
+                                else if (joinText == "Cancel")
+                                {
+                                    if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
+                                    PhotonNetworkController.Instance.AttemptDisconnect();
+                                }
+                            }
+
+                            if (joinText == "Join")
+                            {
+                                optionPosition += 28;
+                                if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Join via. Copy"))
+                                {
+                                    if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
+
+                                    string codeTemp = GUIUtility.systemCopyBuffer.ToUpper();
+                                    if (codeTemp.IsNullOrWhiteSpace()) return;
+                                    if (codeTemp.Length >= 13) codeTemp = codeTemp.Substring(0, 12);
+ 
+                                    lobbyToEnter = codeTemp;
+                                }
                             }
                         }
                         else
                         {
-                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Leave"))
+                            optionPosition -= 30;
+                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Disconnect"))
                             {
                                 if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                                 PhotonNetworkController.Instance.AttemptDisconnect();
@@ -370,21 +417,6 @@ namespace DevCameraMod
             }
         }
 
-
-        public void UpdateFew()
-        {
-            StringBuilder str = new StringBuilder();
-            str.AppendLine("v" + PluginInfo.Version);
-            str.AppendLine(PluginInfo.Credit);
-
-            System.Net.WebClient wc = new System.Net.WebClient();
-            string webData = wc.DownloadString("https://raw.githubusercontent.com/developer9998/DevCameraMod/main/DevCameraMod/DevCameraMod/ScreenText.txt");
-
-            str.Append(webData);
-            cameraUI.versionTex.text = str.ToString();
-
-            wc.Dispose();
-        }
 
         public void OnFirstPersonToggle()
         {
@@ -950,6 +982,7 @@ namespace DevCameraMod
             position += head.forward * forward;
             position += head.right * right;
             position += head.up * up;
+
             return position;
         }
 
@@ -958,8 +991,8 @@ namespace DevCameraMod
             Transform head = rig.headMesh.transform;
             Vector3 position = GetPositionBasedOnRig(rig);
 
-            Vector3 relativePos = head.position - position;
-            Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
+            Vector3 relativePos = (head.position + (head.right * 0.2f) * 0.2f) - position;
+            Quaternion rotation = Quaternion.LookRotation(relativePos - Vector3.up * ((relativePos.y - head.position.y) * 0.01f), Vector3.up);
             return rotation;
         }
 
@@ -981,7 +1014,7 @@ namespace DevCameraMod
         }
 
         // Main method, can be buggy
-        public void LateUpdate()
+        public void FixedUpdate()
         {
             if (!Initialized) return;
 
@@ -1007,7 +1040,7 @@ namespace DevCameraMod
             }
 
             if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 2, 7);
-            if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 7, 7);
+            if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 2, 7);
 
             if (Keyboard.current.f3Key.wasPressedThisFrame)
             {
@@ -1027,23 +1060,15 @@ namespace DevCameraMod
             {
                 if (Time.time >= scoreboardUpdate)
                 {
-                    scoreboardUpdate = Time.time + 0.1f;
+                    scoreboardUpdate = Time.time + 0.5f;
                     cameraUI.scoreboardText.text = "";
                     cameraUI.scoreboardText2.text = "";
                     for (int i = 0; i < GorillaParent.instance.vrrigs.Count; i++)
                     {
-                        if (GorillaParent.instance.vrrigs[i].setMatIndex == 0)
-                        {
-                            string col = ColorUtility.ToHtmlStringRGBA(GorillaParent.instance.vrrigs[i].materialsToChangeTo[0].color);
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                        }
-                        else
-                        {
-                            string col = "751C00";
-                            if (i >= 5) cameraUI.scoreboardText2.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                            else cameraUI.scoreboardText.text += $"{i}. <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
-                        }
+                        string col = GorillaParent.instance.vrrigs[i].setMatIndex == 0 ? ColorUtility.ToHtmlStringRGBA(GorillaParent.instance.vrrigs[i].materialsToChangeTo[0].color) : "751C00";
+                        bool isTalking = GorillaParent.instance.vrrigs[i].GetComponent<PhotonVoiceView>().IsSpeaking || GorillaParent.instance.vrrigs[i].GetComponent<PhotonVoiceView>().IsRecording;
+                        if (i >= 5) cameraUI.scoreboardText2.text += $"<color=#{(isTalking ? "FFFFFF" : "8E8E8E")}>{i}.</color> <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
+                        else cameraUI.scoreboardText.text += $"<color=#{(isTalking ? "FFFFFF" : "8E8E8E")}>{i}.</color> <color=#{col}>{GorillaParent.instance.vrrigs[i].playerText.text}</color>\n";
                     }
                 }
             }
@@ -1059,6 +1084,7 @@ namespace DevCameraMod
                 if (Keyboard.current.gKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, true);
                 if (Keyboard.current.hKey.wasPressedThisFrame) cameraUI.AdjustTeam(true, false);
                 if (Keyboard.current.jKey.wasPressedThisFrame) cameraUI.AdjustTeam(false, false);
+
                 if (Keyboard.current.vKey.wasPressedThisFrame) timeStart = timeStart = true;
                 if (Keyboard.current.bKey.wasPressedThisFrame) timeStart = timeStart = !timeStart;
                 if (Keyboard.current.nKey.wasPressedThisFrame)
@@ -1067,6 +1093,7 @@ namespace DevCameraMod
                     currentTime = -10;
                     hasPassedzero = false;
                 }
+
                 if (Keyboard.current.mKey.wasPressedThisFrame) UpdateLap();
 
                 if (currentTime >= lapTime) cameraUI.lapTime.color = Color.green;
@@ -1078,18 +1105,13 @@ namespace DevCameraMod
                 string patchedMilliseconds = timeSpan.Milliseconds.ToString().Replace("-", "");
                 string patchedSeconds = timeSpan.Seconds.ToString();
                 string patchedMinutes = timeSpan.Minutes.ToString();
-                string patchedHours = timeSpan.Hours.ToString(); // no way lmao
+                string patchedHours = timeSpan.Hours.ToString();
 
-                if (patchedMilliseconds == "0" && !hasPassedzero)
-                {
-                    hasPassedzero = true;
-                    
-                }
+                if (patchedMilliseconds == "0" && !hasPassedzero) hasPassedzero = true;
 
                 string fixedSeconds = $"{(patchedMinutes != "0" ? (patchedSeconds.Length == 1 ? string.Format("0{0}", patchedSeconds) : patchedSeconds) : patchedSeconds)}";
                 string fixedMilliseconds = $"{(patchedMilliseconds.Length >= 2 ? patchedMilliseconds.Substring(0, 2) : (patchedMilliseconds.Length == 1 ? string.Format("0{0}", patchedMilliseconds) : patchedMilliseconds))}";
                 cameraUI.currentTime.text = $"{(timeSpan.Minutes.ToString() == "0" ? "" : (patchedHours == "0" ? string.Format("{0}:", timeSpan.Minutes) : string.Format("{1}:{0}:", patchedMinutes.Length == 1 ? string.Format("0{0}", patchedMinutes) : patchedMinutes, patchedHours)))}{fixedSeconds}.{fixedMilliseconds}";
-
             }
 
             try
@@ -1123,7 +1145,8 @@ namespace DevCameraMod
                     camera.transform.eulerAngles = finalRot;
                 }
 
-                if (cameraMode == CameraModes.DefEnhanced)
+                bool CanMoveCamera = cameraMode == CameraModes.DefEnhanced || intMode >= 4;
+                if (CanMoveCamera)
                 {
                     if (Keyboard.current.wKey.isPressed) forward += ((currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime) * 0.01f;
                     if (Keyboard.current.sKey.isPressed) forward += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
@@ -1133,7 +1156,7 @@ namespace DevCameraMod
                     if (Keyboard.current.eKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.01f;
                 }
             }
-            catch(System.Exception e)
+            catch(Exception e)
             {
                 Debug.LogError($"Error (Freecam) {e.Message} {e.Source} {e.StackTrace}");
             }

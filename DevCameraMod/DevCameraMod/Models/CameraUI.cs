@@ -20,6 +20,7 @@ namespace DevCameraMod.Models
         public Text scoreboardText;
         public Text scoreboardText2;
         public Text versionTex;
+        public Text version2;
         public double timeStamp;
 
         public string LeftTeamName = "null";
