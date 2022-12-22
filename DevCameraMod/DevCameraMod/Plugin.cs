@@ -1,84 +1,63 @@
 ﻿using BepInEx;
 using Cinemachine;
+using GorillaNetworking;
+using Photon.Pun;
+using DevCameraMod.Models;
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using Photon.Pun;
-using GorillaNetworking;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Collections.Generic;
-using DevCameraMod.Models;
-using System;
-using System.Text;
 
 namespace DevCameraMod
 {
     /// <summary>
-    /// This is your mod's main class.
+    /// This is the main script for my camera mod.
     /// </summary>
-
     [BepInPlugin(PluginInfo.GUID, PluginInfo.Name, PluginInfo.Version)]
     public class Plugin : BaseUnityPlugin
     {
+        // Instance data
         public static Plugin Instance { get; private set; }
         public bool Initialized;
 
+        // Objects
         public GameObject nametagBase;
+        public AudioListener playerListener;
+        public AudioListener cameraListener;
 
-        public CameraUI cameraUI;
-
-        public Transform cameraParent;
+        // Camera objects
         public Camera camera;
+        public Transform cameraParent;
         public CinemachineVirtualCamera virtualCamera;
         public GameObject previewObject;
+        public List<int> fixedCameras = new List<int>();
+        public List<string> fixedCameraNames = new List<string>();
 
+        // Sounds
         public AudioClip type;
         public AudioClip click;
-
+        
+        // Position/Rotation data
         public Vector3 cameraPosition;
         public Vector2 cameraRotation;
         public Quaternion cR3;
-
         public Vector3 finalPos;
         public Vector2 finalRot;
         public Quaternion finalcR3;
 
+        // General camera variables
         public float currentSpeed = 2.5f;
         public float currentMultiplier = 1;
         public float rotationMultiplier = 8.5f;
-
-        public float findAnotherCooldown = 0;
-        public float changeTransformCooldown = 0;
-        public float ifNotTaggedCooldown = 0;
-        public float tripsWithGuy = 0;
-        public float scoreboardUpdate = 0;
-        public float lastTrackedSurvivor;
-        public bool spectatingSurvivor = true;
-        public float canvasSize = 120;
-        public float canvasScaleCurrent = 120;
-        public bool listener;
-
-        public float swapDelayNonImportant = 1;
-
-        public VRRig vrrig;
-        public VRRig toRig;
-        public VRRig lastRig;
-        public VRRig rigtostaredown;
-        public int rigtofollow;
-        public int lastplr;
-
-        public bool canFocusOnOthersFace;
-
-        public bool firstperson;
-        public bool updateHideCosmetics = true;
-
-
         public float forward = -1.38f;
         public float right = 0.3566f;
         public float up = 0.8648f;
-
+        public bool listener;
         public float cameraLerp = 0.07f;
         public float quatLerp = 0.085f;
         public float editFOV = 60;
@@ -86,24 +65,58 @@ namespace DevCameraMod
         public float editClipPlane = 0.03f;
         public float clipPlane = 0.03f;
         public float clipPlaneFar = 10000;
+        public int intMode = 0;
+        public int intMask = 0;
+        public CameraModes cameraMode;
+        public bool CanChangeMode;
+        public bool nameTags;
 
+        // General camera follow
+        public VRRig vrrig;
+        public VRRig toRig;
+        public VRRig lastRig;
+        public VRRig rigtostaredown;
+        public int rigtofollow;
+        public int lastplr;
+        public bool canFocusOnOthersFace;
+        public bool firstperson;
+        public bool updateHideCosmetics = true;
+
+        // AI camera follow
+        public float findAnotherCooldown = 0;
+        public float changeTransformCooldown = 0;
+        public float ifNotTaggedCooldown = 0;
+        public float tripsWithGuy = 0;
+        public float scoreboardUpdate = 0;
+        public float lastTrackedSurvivor;
+        public bool spectatingSurvivor = true;
+        public System.Random monkRand;
+
+        // User interface
+        public string lobbyToEnter = "CODE";
+        public float canvasSize = 120;
+        public float canvasScaleCurrent = 120;
+        public CameraUI cameraUI;
+        public bool ShowMenu = true;
+        public bool ShowFrame;
+        public bool shouldBeEnabled;
+        public bool canBeShown = true;
+
+        // Lap system
         public double currentTime = -10;
         public double lapTime = -10;
         public bool timeStart;
+        public bool hasPassedzero;
 
-        public string lobbyToEnter = "CODE";
-
-        public System.Random monkRand;
-
+        // Game
         public GorillaTagManager gtm;
-        public Transform toLocalObject;
 
+        // Enums
         public enum CameraModes
         {
             Default,
             DefEnhanced,
             FP,
-            //Gopro,
             Freecam,
             SelectedPlayer,
             ActivitySpan,
@@ -117,35 +130,77 @@ namespace DevCameraMod
             { CameraModes.DefEnhanced, "Enhanced" },
             { CameraModes.FP, "FirstPerson" },
             { CameraModes.Freecam, "FreeCam" },
-            //{ CameraModes.Gopro, "GoPro (WIP)" },
             { CameraModes.SelectedPlayer, "PlayerFocus" },
             { CameraModes.ActivitySpan, "RandomFocus" },
             { CameraModes.SurvivorFocus, "SurvivorFocus" },
             { CameraModes.LavaFocus, "TaggerFocus" }
         };
 
-        public List<int> fixedCameras = new List<int>();
-        public List<string> fixedCameraNames = new List<string>();
-
-        public int intMode = 0;
-        public int intMask = 0; 
-        public CameraModes cameraMode = CameraModes.Default;
-
-        public bool CanChangeMode;
-
-        public bool ShowMenu = true;
-        public bool ShowFrame = false;
-        public bool hasPassedzero = false;
-
-        public AudioListener playerListener;
-        public AudioListener cameraListener;
-        public bool nameTags = false;
-
-        internal void Awake()
+        protected void Awake()
         {
             Instance = this;
 
             HarmonyPatches.HarmonyPatches.ApplyHarmonyPatches();
+        }
+
+        public void OnInitialized()
+        {
+            /* Code here runs after the game initializes (i.e. GorillaLocomotion.Player.Instance != null) */
+
+            if (Initialized) return;
+
+            camera = GorillaTagger.Instance.thirdPersonCamera.GetComponentInChildren<Camera>();
+            cameraParent = GorillaTagger.Instance.thirdPersonCamera.transform;
+            virtualCamera = camera.GetComponentInChildren<CinemachineVirtualCamera>();
+            vrrig = GorillaTagger.Instance.offlineVRRig;
+
+            CanChangeMode = true;
+
+            fixedCameraNames.Add("Spectator");
+            fixedCameras.Add(camera.cullingMask);
+            fixedCameraNames.Add("VR");
+            fixedCameras.Add(GorillaLocomotion.Player.Instance.GetComponentInChildren<Camera>().cullingMask);
+
+            cameraUI = new CameraUI();
+
+            Stream str = Assembly.GetExecutingAssembly().GetManifestResourceStream("DevCameraMod.Resources.devcameraui");
+            AssetBundle bundle = AssetBundle.LoadFromStream(str);
+
+            type = bundle.LoadAsset<AudioClip>("click");
+            click = bundle.LoadAsset<AudioClip>("button");
+
+            GameObject uiObject = Instantiate(bundle.LoadAsset<GameObject>("DevCameraUI"));
+
+            nametagBase = bundle.LoadAsset<GameObject>("NametagBase");
+
+            DontDestroyOnLoad(uiObject);
+            cameraUI.canvas = uiObject.GetComponent<Canvas>();
+            cameraUI.cameraSpectator = uiObject.transform.Find("Text").GetComponent<Text>();
+            cameraUI.currentlySpectating = uiObject.transform.Find("Text (1)").GetComponent<Text>();
+            cameraUI.leftPoints = uiObject.transform.Find("TeamPoints1").GetComponent<Text>();
+            cameraUI.rightPoints = uiObject.transform.Find("TeamPoints2").GetComponent<Text>();
+            cameraUI.leftTeam = uiObject.transform.Find("TeamName1").GetComponent<Text>();
+            cameraUI.rightTeam = uiObject.transform.Find("TeamName2").GetComponent<Text>();
+            cameraUI.currentTime = uiObject.transform.Find("CurrentTime").GetComponent<Text>();
+            cameraUI.lapTime = uiObject.transform.Find("CurrentTime (1)").GetComponent<Text>();
+            cameraUI.currentSpecImage = uiObject.transform.Find("RawImage").GetComponent<RawImage>();
+            cameraUI.scoreboardText = uiObject.transform.Find("board1").GetComponent<Text>();
+            cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
+            cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
+
+            cameraUI.canvas.enabled = false;
+            cameraUI.leftTeam.text = "null";
+            cameraUI.rightTeam.text = "null";
+
+            UpdateLap();
+            InvokeRepeating("UpdateFew", 5, 20);
+
+            playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
+            cameraListener = camera.gameObject.AddComponent<AudioListener>();
+            Debug.unityLogger.logEnabled = true;
+
+            cameraListener.enabled = false;
+            Initialized = true;
         }
 
         internal void SwitchModePress(bool leftButton, int minConstraints, int maxConstaints)
@@ -167,7 +222,7 @@ namespace DevCameraMod
             OnModeChange();
         }
 
-        internal void OnGUI()
+        protected void OnGUI()
         {
             if (ShowMenu)
             {
@@ -185,15 +240,8 @@ namespace DevCameraMod
 
                     GUI.Label(new Rect((180 / 2) - 30, 100, 180, 20), fixedCameraModeName[cameraMode]);
 
-                    if (GUI.Button(new Rect(25 + 5, 100, 20, 20), "<"))
-                    {
-                        SwitchModePress(true, modesWhenNotInRoom, moesWhenInRoom);
-                    }
-
-                    if (GUI.Button(new Rect(180 - 5, 100, 20, 20), ">"))
-                    {
-                        SwitchModePress(false, modesWhenNotInRoom, moesWhenInRoom);
-                    }
+                    if (GUI.Button(new Rect(25 + 5, 100, 20, 20), "<")) SwitchModePress(true, modesWhenNotInRoom, moesWhenInRoom);
+                    if (GUI.Button(new Rect(180 - 5, 100, 20, 20), ">")) SwitchModePress(false, modesWhenNotInRoom, moesWhenInRoom);
 
                     if (!PhotonNetwork.InRoom) GUI.Label(new Rect(35, 125, 180, 20), "<color=red>Join a private for all modes</color>");
                     else if (PhotonNetwork.CurrentRoom.IsVisible) GUI.Label(new Rect(35, 125, 180, 20), "<color=red>Join a private for all modes</color>");
@@ -213,9 +261,9 @@ namespace DevCameraMod
                         camera.cullingMask = fixedCameras[intMask];
                     }
 
-                    canvasScaleCurrent = Mathf.Lerp(canvasScaleCurrent, canvasSize, 0.03f);
+                    canvasScaleCurrent = Mathf.Lerp(canvasScaleCurrent, canvasSize, 0.1f);
 
-                    if ((cameraMode != CameraModes.Default && cameraMode != CameraModes.FP && cameraMode != CameraModes.DefEnhanced) && cameraUI != null)
+                    if (cameraMode != CameraModes.Default && cameraMode != CameraModes.FP && cameraMode != CameraModes.DefEnhanced && cameraUI != null)
                     {
                         bool lastPerson = firstperson;
                         string lastLeftName = cameraUI.LeftTeamName;
@@ -228,10 +276,7 @@ namespace DevCameraMod
                             currentSpeed = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), currentSpeed, 1, 10);
                             optionPosition += 50;
                         }
-                        /*
-                        if (cameraMode != CameraModes.Gopro)
-                        {*/
-                        //GUI.Label(new Rect(60, optionPosition, 160, 20), $"Position lerp: {(cameraLerp.ToString().Length >= 4 ? cameraLerp.ToString().Substring(0, 4) : cameraLerp.ToString())}");
+
                         GUI.Label(new Rect(50, optionPosition, 160, 70), $"Position         Rotation");
                         cameraLerp = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), cameraLerp, 0.02f, 0.75f);
                         quatLerp = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), quatLerp, 0.02f, 0.75f);
@@ -284,22 +329,29 @@ namespace DevCameraMod
 
                         if (!PhotonNetwork.InRoom)
                         {
-                            GUI.Label(new Rect(40, optionPosition, 160, 20), $"Lobby: {lobbyToEnter}");
-                            string lobbyTemp = GUI.TextArea(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), lobbyToEnter, 200);
+                            GUI.Label(new Rect(40, optionPosition, 160, 20), $"Room: {lobbyToEnter}");
+                            string lobbyTemp = GUI.TextArea(new Rect(25 + 10 / 2.5f, optionPosition + 30, 170, 20), lobbyToEnter, 200);
 
                             if (lobbyTemp.Length <= 12 && lastLobby != lobbyTemp)
                             {
                                 if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
-                                lobbyToEnter = lobbyTemp.Replace(Environment.NewLine, "").ToUpper();
+                                lobbyToEnter = lobbyTemp.Replace(Environment.NewLine, string.Empty).ToUpper();
                             }
 
                             optionPosition += 28;
 
-                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), "Join"))
+                            string joinText;
+                            string[] joiningNames = new string[3] { "JoiningPublicRoom", "JoiningSpecificRoom", "JoiningFriend" };
+                            string[] loadingNames = new string[2] { "Initialization", "DeterminingPingsAndPlayerCount" };
+
+                            if (PhotonNetworkController.Instance == null) joinText = "Connecting";
+                            else joinText = joiningNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Joining" : (loadingNames.Contains(PhotonNetworkController.Instance.CurrentState()) ? "Connecting" : "Join");
+
+                            if (GUI.Button(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), joinText) && joinText == "Join")
                             {
                                 if (click != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(click);
                                 if (!GorillaComputer.instance.CheckAutoBanListForName(lobbyToEnter)) return;
-                                if (lobbyToEnter == "") return;
+                                if (lobbyToEnter.IsNullOrWhiteSpace()) return;
                                 PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(lobbyToEnter);
                             }
                         }
@@ -318,68 +370,6 @@ namespace DevCameraMod
             }
         }
 
-        public void OnInitialized()
-        {
-            /* Code here runs after the game initializes (i.e. GorillaLocomotion.Player.Instance != null) */
-
-            if (Initialized) return;
-
-            camera = FindObjectsOfType<Camera>()[FindObjectsOfType<Camera>().Length- 1];
-            cameraParent = camera.transform.parent;
-            virtualCamera = camera.GetComponentInChildren<CinemachineVirtualCamera>();
-            vrrig = GorillaTagger.Instance.offlineVRRig;
-            toLocalObject = new GameObject().transform;
-
-            CanChangeMode = true;
-
-            fixedCameraNames.Add("Spectator");
-            fixedCameras.Add(camera.cullingMask);
-            fixedCameraNames.Add("VR");
-            fixedCameras.Add(GorillaLocomotion.Player.Instance.GetComponentInChildren<Camera>().cullingMask);
-
-            cameraUI = new CameraUI();
-
-            Stream str = Assembly.GetExecutingAssembly().GetManifestResourceStream("DevCameraMod.Resources.devcameraui");
-            AssetBundle bundle = AssetBundle.LoadFromStream(str);
-
-            type = bundle.LoadAsset<AudioClip>("click");
-            click = bundle.LoadAsset<AudioClip>("button");
-
-            GameObject uiObject = Instantiate(bundle.LoadAsset<GameObject>("DevCameraUI"));
-
-            nametagBase = bundle.LoadAsset<GameObject>("NametagBase");
-
-            DontDestroyOnLoad(uiObject);
-
-            cameraUI.canvas = uiObject.GetComponent<Canvas>();
-            cameraUI.cameraSpectator = uiObject.transform.Find("Text").GetComponent<Text>();
-            cameraUI.currentlySpectating = uiObject.transform.Find("Text (1)").GetComponent<Text>();
-            cameraUI.leftPoints = uiObject.transform.Find("TeamPoints1").GetComponent<Text>();
-            cameraUI.rightPoints = uiObject.transform.Find("TeamPoints2").GetComponent<Text>();
-            cameraUI.leftTeam = uiObject.transform.Find("TeamName1").GetComponent<Text>();
-            cameraUI.rightTeam = uiObject.transform.Find("TeamName2").GetComponent<Text>();
-            cameraUI.currentTime = uiObject.transform.Find("CurrentTime").GetComponent<Text>();
-            cameraUI.lapTime = uiObject.transform.Find("CurrentTime (1)").GetComponent<Text>();
-            cameraUI.currentSpecImage = uiObject.transform.Find("RawImage").GetComponent<RawImage>();
-            cameraUI.scoreboardText = uiObject.transform.Find("board1").GetComponent<Text>();
-            cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
-            cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
-
-            cameraUI.canvas.enabled = false;
-            cameraUI.leftTeam.text = "null";
-            cameraUI.rightTeam.text = "null";
-
-            UpdateLap();
-            InvokeRepeating("UpdateFew", 5, 40);
-
-            playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
-            cameraListener = camera.gameObject.AddComponent<AudioListener>();
-            Debug.unityLogger.logEnabled = false;
-
-            cameraListener.enabled = false;
-            Initialized = true;
-
-        }
 
         public void UpdateFew()
         {
@@ -406,16 +396,13 @@ namespace DevCameraMod
         public void OnModeChange()
         {
             cameraUI.canvas.enabled = false;
+            shouldBeEnabled = false;
             firstperson = false;
             finalPos = camera.transform.position;
             updateHideCosmetics = true;
             camera.transform.SetParent(cameraParent, false);
 
-            if (toRig != null)
-            {
-                foreach (var cosmetic in toRig.cosmetics) if (cosmetic.transform.parent.parent.name == toRig.headMesh.name) cosmetic.layer = 0;
-            }
-
+            if (toRig != null) foreach (var cosmetic in toRig.cosmetics) if (cosmetic.transform.parent.parent.name == toRig.headMesh.name) cosmetic.layer = 0;
 
             PhotonNetworkController.Instance.disableAFKKick = true;
             camera.transform.SetParent(cameraParent, false);
@@ -450,11 +437,7 @@ namespace DevCameraMod
             }
 
             gtm = null;
-
-            if (GorillaGameManager.instance != null && GorillaGameManager.instance.GetComponent<GorillaTagManager>() != null)
-            {
-                gtm = GorillaGameManager.instance.GetComponent<GorillaTagManager>();
-            }
+            if (GorillaGameManager.instance != null && GorillaGameManager.instance.GetComponent<GorillaTagManager>() != null) gtm = GorillaGameManager.instance.GetComponent<GorillaTagManager>();
 
             //cameraUI.canvas.enabled = false;
         }
@@ -551,7 +534,7 @@ namespace DevCameraMod
 
                 for (int i = 0; i < infectedGorillas.Count; i++)
                 {
-                    float totalDist = 0;
+                    float totalDist;
                     List<float> dist = new List<float>();
                     VRRig LavaGorilla = infectedGorillas[i];
                     for (int index = 0; index < survivorGorillas.Count; index++)
@@ -736,7 +719,7 @@ namespace DevCameraMod
                 List<float> lavaDistances = new List<float>();
                 for (int i = 0; i < survivorGorillas.Count; i++)
                 {
-                    float totalDist = 0;
+                    float totalDist;
                     List<float> dist = new List<float>();
                     VRRig LavaGorilla = survivorGorillas[i];
                     for (int index = 0; index < infectedGorillas.Count; index++)
@@ -1002,7 +985,7 @@ namespace DevCameraMod
         {
             if (!Initialized) return;
 
-            if (Keyboard.current.f4Key.wasPressedThisFrame)
+            if (Keyboard.current.f1Key.wasPressedThisFrame)
             {
                 ShowMenu = !ShowMenu;
                 if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
@@ -1017,12 +1000,26 @@ namespace DevCameraMod
             playerListener.enabled = !listener;
             cameraListener.enabled = listener;
 
+            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            {
+                firstperson = !firstperson;
+                OnFirstPersonToggle();
+            }
+
             if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 2, 7);
             if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 7, 7);
 
-            if (Keyboard.current.f2Key.wasPressedThisFrame)
+            if (Keyboard.current.f3Key.wasPressedThisFrame)
             {
                 nameTags = !nameTags;
+                if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
+            }
+
+            if (Keyboard.current.f4Key.wasPressedThisFrame)
+            {
+                canBeShown = !canBeShown;
+                if (canBeShown) cameraUI.canvas.enabled = shouldBeEnabled;
+                else cameraUI.canvas.enabled = false;
                 if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
             }
 
@@ -1093,12 +1090,6 @@ namespace DevCameraMod
                 string fixedMilliseconds = $"{(patchedMilliseconds.Length >= 2 ? patchedMilliseconds.Substring(0, 2) : (patchedMilliseconds.Length == 1 ? string.Format("0{0}", patchedMilliseconds) : patchedMilliseconds))}";
                 cameraUI.currentTime.text = $"{(timeSpan.Minutes.ToString() == "0" ? "" : (patchedHours == "0" ? string.Format("{0}:", timeSpan.Minutes) : string.Format("{1}:{0}:", patchedMinutes.Length == 1 ? string.Format("0{0}", patchedMinutes) : patchedMinutes, patchedHours)))}{fixedSeconds}.{fixedMilliseconds}";
 
-            }
-
-            if (Keyboard.current.f3Key.wasPressedThisFrame)
-            {
-                firstperson = !firstperson;
-                OnFirstPersonToggle();
             }
 
             try
@@ -1196,7 +1187,8 @@ namespace DevCameraMod
                                     cR3 = GetRotationBasedOnRig(lookAtRig ?? rig);
                                 }
 
-                                cameraUI.canvas.enabled = true;
+                                cameraUI.canvas.enabled = canBeShown;
+                                shouldBeEnabled = true;
                                 cameraUI.currentlySpectating.text = $"{toRig.playerText.text}{Environment.NewLine}{(toRig.setMatIndex == 0 ? "SURVIVOR" : "TAGGER")}";
                                 cameraUI.currentSpecImage.texture = toRig.materialsToChangeTo[toRig.setMatIndex].mainTexture ?? null;
                                 cameraUI.currentSpecImage.color = toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color") == null ? Color.white : toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color");
@@ -1240,7 +1232,8 @@ namespace DevCameraMod
                                 camera.transform.localPosition = Vector3.Lerp(camera.transform.localPosition, new Vector3(0, 0.12f, 0), cameraLerp);
                                 camera.transform.localRotation = Quaternion.Slerp(camera.transform.localRotation, Quaternion.identity, quatLerp);
 
-                                cameraUI.canvas.enabled = true;
+                                cameraUI.canvas.enabled = canBeShown;
+                                shouldBeEnabled = true;
                                 cameraUI.currentlySpectating.text = $"{toRig.playerText.text}{Environment.NewLine}{(toRig.setMatIndex == 0 ? "SURVIVOR" : "TAGGER")}";
                                 cameraUI.currentSpecImage.texture = toRig.materialsToChangeTo[toRig.setMatIndex].mainTexture ?? null;
                                 cameraUI.currentSpecImage.color = toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color") == null ? Color.white : toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color");
@@ -1306,7 +1299,8 @@ namespace DevCameraMod
                             cR3 = GetRotationBasedOnRig(rig);
                         }
 
-                        cameraUI.canvas.enabled = true;
+                        cameraUI.canvas.enabled = canBeShown;
+                        shouldBeEnabled = true;
                         cameraUI.currentlySpectating.text = $"{rig.playerText.text}{Environment.NewLine}{(rig.setMatIndex == 0 ? "SURVIVOR" : "TAGGER")}";
                         cameraUI.currentSpecImage.texture = rig.materialsToChangeTo[rig.setMatIndex].mainTexture ?? null;
                         cameraUI.currentSpecImage.color = rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color") == null ? Color.white : rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color");
@@ -1332,7 +1326,8 @@ namespace DevCameraMod
 
                         VRRig rig = GorillaParent.instance.vrrigs[rigtofollow];
 
-                        cameraUI.canvas.enabled = true;
+                        cameraUI.canvas.enabled = canBeShown;
+                        shouldBeEnabled = true;
                         cameraUI.currentlySpectating.text = $"{rig.playerText.text}{Environment.NewLine}{(rig.setMatIndex == 0 ? "SURVIVOR" : "TAGGER")}";
                         cameraUI.currentSpecImage.texture = rig.materialsToChangeTo[rig.setMatIndex].mainTexture ?? null;
                         cameraUI.currentSpecImage.color = rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color") == null ? Color.white : rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color");
