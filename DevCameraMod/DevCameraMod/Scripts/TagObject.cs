@@ -15,12 +15,14 @@ namespace DevCameraMod.Scripts
         public GameObject tagObject;
         public Text tex;
         public Canvas canv;
+        public Vector3 scale;
 
         public void StartDelay() => Invoke("StartImmediate", 2);
 
         public void StartImmediate()
         {
             tagObject = Instantiate(Plugin.Instance.nametagBase);
+            scale = tagObject.transform.localScale;
             tex = tagObject.GetComponentInChildren<Text>();
             canv = tagObject.GetComponent<Canvas>();
             tagObject.AddComponent<TagDespawn>().rig = rig;
@@ -30,7 +32,8 @@ namespace DevCameraMod.Scripts
         {
             if (tagObject != null)
             {
-                tagObject.transform.position = rig.headMesh.transform.position + new Vector3(0, 0.364f, 0);
+                tagObject.transform.localScale = scale * rig.transform.localScale.y;
+                tagObject.transform.position = rig.headMesh.transform.position + (new Vector3(0, 0.364f, 0) * rig.transform.localScale.y);
                 tagObject.transform.rotation = Plugin.Instance.camera.transform.rotation;
                 tex.text = rig.playerText.text;
                 tex.color = rig.setMatIndex == 0 ? rig.materialsToChangeTo[0].color : new Color(0.4588235f, 0.1098039f, 0);

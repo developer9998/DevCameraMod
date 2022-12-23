@@ -979,9 +979,9 @@ namespace DevCameraMod
             Transform head = rig.headMesh.transform.parent;
             Vector3 position = head.position;
 
-            position += head.forward * forward;
-            position += head.right * right;
-            position += head.up * up;
+            position += head.forward * (forward);
+            position += head.right * (right);
+            position += head.up * (up);
 
             return position;
         }
@@ -991,8 +991,8 @@ namespace DevCameraMod
             Transform head = rig.headMesh.transform;
             Vector3 position = GetPositionBasedOnRig(rig);
 
-            Vector3 relativePos = (head.position + (head.right * 0.2f) * 0.2f) - position;
-            Quaternion rotation = Quaternion.LookRotation(relativePos - Vector3.up * ((relativePos.y - head.position.y) * 0.01f), Vector3.up);
+            Vector3 relativePos = head.position - position;
+            Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
             return rotation;
         }
 
@@ -1024,10 +1024,22 @@ namespace DevCameraMod
                 if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
             }
 
-            editClipPlane = cameraMode == CameraModes.Default ? Mathf.Lerp(editClipPlane, 0.01f, 0.075f) : Mathf.Lerp(editClipPlane, clipPlane, 0.075f);
-            camera.nearClipPlane= editClipPlane;
+            float fixedClip = clipPlane;
+            if (cameraMode == CameraModes.DefEnhanced && PhotonNetwork.InRoom) fixedClip = clipPlane * GorillaTagger.Instance.myVRRig.transform.localScale.y;
+            if (cameraMode == CameraModes.ActivitySpan) fixedClip = clipPlane * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.SurvivorFocus) fixedClip = clipPlane * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.LavaFocus) fixedClip = clipPlane * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.SelectedPlayer) fixedClip = clipPlane * GorillaParent.instance.vrrigs[rigtofollow].transform.localScale.y;
+            editClipPlane = cameraMode == CameraModes.Default ? Mathf.Lerp(editClipPlane, 0.01f, 0.075f) : Mathf.Lerp(editClipPlane, fixedClip, 0.075f);
+            camera.nearClipPlane = editClipPlane;
 
-            editFOV = cameraMode == CameraModes.Default ? Mathf.Lerp(editFOV, 60, 0.075f) : Mathf.Lerp(editFOV, FOV, 0.075f);
+            float fixedFOV = FOV;
+            if (cameraMode == CameraModes.DefEnhanced && PhotonNetwork.InRoom) fixedFOV = FOV * GorillaTagger.Instance.myVRRig.transform.localScale.y;
+            if (cameraMode == CameraModes.ActivitySpan) fixedFOV = FOV * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.SurvivorFocus) fixedFOV = FOV * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.LavaFocus) fixedFOV = FOV * toRig.transform.localScale.y;
+            if (cameraMode == CameraModes.SelectedPlayer) fixedFOV = FOV * GorillaParent.instance.vrrigs[rigtofollow].transform.localScale.y;
+            editFOV = cameraMode == CameraModes.Default ? Mathf.Lerp(editFOV, 60, 0.075f) : Mathf.Lerp(editFOV, fixedFOV, 0.075f);
             camera.fieldOfView = editFOV;
 
             playerListener.enabled = !listener;
