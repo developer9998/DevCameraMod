@@ -1,1 +1,1 @@
-﻿Notice: There is a bug with the version text. If you downloaded the latest version (v1.0.6) you HAVE the latest version.
+﻿Notice: Make sure you have the LATEST version (v1.0.7)
