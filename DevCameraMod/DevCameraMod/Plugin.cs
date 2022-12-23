@@ -195,6 +195,7 @@ namespace DevCameraMod
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
             cameraUI.rightTeam.text = "null";
+            cameraUI.version2.text = PluginInfo.Name + " v" + PluginInfo.Version;
 
             UpdateLap();
 
@@ -221,7 +222,6 @@ namespace DevCameraMod
                     string webData = webClient.DownloadString("https://raw.githubusercontent.com/developer9998/DevCameraMod/main/DevCameraMod/DevCameraMod/ScreenText.txt");
 
                     cameraUI.versionTex.text = webData;
-                    cameraUI.version2.text = PluginInfo.Name + " v" + PluginInfo.Version;
                 }
             }
             finally { webClient.Dispose(); }
