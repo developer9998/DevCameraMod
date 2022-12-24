@@ -115,11 +115,11 @@ namespace DevCameraMod
         public GorillaTagManager gtm;
 
         // Enums
-        public enum CameraModes
+        public enum CameraModes // TODO: rearrange this to make it work better
         {
             Default,
-            DefEnhanced,
             FP,
+            DefEnhanced,
             Freecam,
             SelectedPlayer,
             ActivitySpan,
@@ -293,7 +293,6 @@ namespace DevCameraMod
 
                     if (cameraMode != CameraModes.Default && cameraMode != CameraModes.FP && cameraMode != CameraModes.DefEnhanced && cameraUI != null)
                     {
-                        bool lastPerson = firstperson;
                         string lastLeftName = cameraUI.LeftTeamName;
                         string lastRightName = cameraUI.RightTeamName;
                         float optionPosition = 180;
@@ -301,13 +300,13 @@ namespace DevCameraMod
                         if (cameraMode == CameraModes.Freecam)
                         {
                             GUI.Label(new Rect(60, optionPosition, 160, 20), $"Camera Speed: {(currentSpeed.ToString().Length >= 3 ? currentSpeed.ToString().Substring(0, 3) : currentSpeed.ToString())}");
-                            currentSpeed = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), currentSpeed, 1, 10);
+                            currentSpeed = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), currentSpeed, 0, 5);
                             optionPosition += 50;
                         }
 
                         GUI.Label(new Rect(50, optionPosition, 160, 70), $"Position         Rotation");
-                        cameraLerp = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), cameraLerp, 0.02f, 0.75f);
-                        quatLerp = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), quatLerp, 0.02f, 0.75f);
+                        cameraLerp = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), cameraLerp, 0.02f, 0.3f);
+                        quatLerp = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), quatLerp, 0.02f, 0.3f);
 
                         optionPosition += 50;
 
@@ -1147,11 +1146,28 @@ namespace DevCameraMod
                     if (Keyboard.current.rightArrowKey.isPressed) rawEulerAngles += new Vector2(0, currentSpeed * currentMultiplier * 0.015f * rotationMultiplier);
                     if (Keyboard.current.leftArrowKey.isPressed) rawEulerAngles += new Vector2(0, currentSpeed * currentMultiplier * 0.015f * -1 * rotationMultiplier);
 
+                    if (Gamepad.current != null)
+                    {
+                        Gamepad currentGamepad = Gamepad.current;
+                        if (currentGamepad.leftStick.ReadValue().y > 0.1) rawVelocity += camera.transform.forward * currentSpeed * currentMultiplier * 0.015f;
+                        if (currentGamepad.leftStick.ReadValue().y < -0.1) rawVelocity += camera.transform.forward * currentSpeed * currentMultiplier * 0.015f * -1;
+                        if (currentGamepad.leftStick.ReadValue().x > 0.1) rawVelocity += camera.transform.right * currentSpeed * currentMultiplier * 0.015f;
+                        if (currentGamepad.leftStick.ReadValue().x < -0.1) rawVelocity += camera.transform.right * currentSpeed * currentMultiplier * 0.015f * -1;
+
+                        if (currentGamepad.rightStick.ReadValue().y > 0.1) rawEulerAngles += new Vector2(currentSpeed * currentMultiplier * 0.015f * -1 * rotationMultiplier, 0);
+                        if (currentGamepad.rightStick.ReadValue().y < -0.1) rawEulerAngles += new Vector2(currentSpeed * currentMultiplier * 0.015f * rotationMultiplier, 0);
+                        if (currentGamepad.rightStick.ReadValue().x > 0.1) rawEulerAngles += new Vector2(0, currentSpeed * currentMultiplier * 0.015f * rotationMultiplier);
+                        if (currentGamepad.rightStick.ReadValue().x < -0.1) rawEulerAngles += new Vector2(0, currentSpeed * currentMultiplier * 0.015f * -1 * rotationMultiplier);
+
+                        if (currentGamepad.leftShoulder.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f;
+                        if (currentGamepad.rightShoulder.isPressed) rawVelocity += camera.transform.up * currentSpeed * currentMultiplier * 0.015f;
+                    }
+
                     cameraPosition += rawVelocity;
                     cameraRotation += rawEulerAngles;
 
-                    finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp);
-                    finalRot = Vector3.Lerp(finalRot, cameraRotation, quatLerp);
+                    finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
+                    finalRot = Vector3.Lerp(finalRot, cameraRotation, quatLerp - Time.deltaTime);
 
                     camera.transform.position = finalPos;
                     camera.transform.eulerAngles = finalRot;
@@ -1160,12 +1176,24 @@ namespace DevCameraMod
                 bool CanMoveCamera = cameraMode == CameraModes.DefEnhanced || intMode >= 4;
                 if (CanMoveCamera)
                 {
-                    if (Keyboard.current.wKey.isPressed) forward += ((currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime) * 0.01f;
-                    if (Keyboard.current.sKey.isPressed) forward += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
-                    if (Keyboard.current.dKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
-                    if (Keyboard.current.aKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.01f;
-                    if (Keyboard.current.qKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.01f;
-                    if (Keyboard.current.eKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.01f;
+                    if (Keyboard.current.wKey.isPressed) forward += ((currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime) * 0.005f;
+                    if (Keyboard.current.sKey.isPressed) forward += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                    if (Keyboard.current.dKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                    if (Keyboard.current.aKey.isPressed) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.005f;
+                    if (Keyboard.current.qKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                    if (Keyboard.current.eKey.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.005f;
+
+                    if (Gamepad.current != null)
+                    {
+                        Gamepad currentGamepad = Gamepad.current;
+                        if (currentGamepad.leftStick.ReadValue().y > 0.1) forward += ((currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime) * 0.005f;
+                        if (currentGamepad.leftStick.ReadValue().y < -0.1) forward += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                        if (currentGamepad.leftStick.ReadValue().x > 0.1) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                        if (currentGamepad.leftStick.ReadValue().x < -0.1) right += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.005f;
+
+                        if (currentGamepad.leftShoulder.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * -1 * 0.005f;
+                        if (currentGamepad.rightShoulder.isPressed) up += (currentSpeed * currentMultiplier * 0.015f) / Time.deltaTime * 0.005f;
+                    }
                 }
             }
             catch(Exception e)
@@ -1228,8 +1256,8 @@ namespace DevCameraMod
                                 cameraUI.currentSpecImage.texture = toRig.materialsToChangeTo[toRig.setMatIndex].mainTexture ?? null;
                                 cameraUI.currentSpecImage.color = toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color") == null ? Color.white : toRig.materialsToChangeTo[toRig.setMatIndex].GetColor("_Color");
 
-                                finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp);
-                                finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp);
+                                finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
+                                finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp - Time.deltaTime);
 
                                 camera.transform.position = finalPos;
                                 camera.transform.rotation = finalcR3;
@@ -1311,8 +1339,8 @@ namespace DevCameraMod
                         cR3 = GetRotationBasedOnRig(rig);
                     }
 
-                    finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp);
-                    finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp);
+                    finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
+                    finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp - Time.deltaTime);
 
                     camera.transform.position = finalPos;
                     camera.transform.rotation = finalcR3;
@@ -1340,8 +1368,8 @@ namespace DevCameraMod
                         cameraUI.currentSpecImage.texture = rig.materialsToChangeTo[rig.setMatIndex].mainTexture ?? null;
                         cameraUI.currentSpecImage.color = rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color") == null ? Color.white : rig.materialsToChangeTo[rig.setMatIndex].GetColor("_Color");
 
-                        finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp);
-                        finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp);
+                        finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
+                        finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp - Time.deltaTime);
 
                         camera.transform.position = finalPos;
                         camera.transform.rotation = finalcR3;

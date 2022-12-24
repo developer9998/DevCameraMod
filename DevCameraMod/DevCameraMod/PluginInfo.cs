@@ -7,7 +7,7 @@
     {
         public const string GUID = "com.dev9998.gorillatagcompetitive.devcameramod";
         public const string Name = "DevCameraMod";
-        public const string Version = "1.0.7";
+        public const string Version = "1.0.9";
         public const string Credit = "Mod by developer9998 on Twitch";
     }
 }
