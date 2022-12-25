@@ -21,6 +21,8 @@ namespace DevCameraMod.Models
         public Text scoreboardText2;
         public Text versionTex;
         public Text version2;
+        public Text codeSecret;
+        public Text scoreHeader;
         public double timeStamp;
 
         public string LeftTeamName = "null";
@@ -31,12 +33,14 @@ namespace DevCameraMod.Models
             if (team)
             {
                 int points = int.Parse(leftPoints.text);
-                leftPoints.text = (points + (add ? 1 : -1)).ToString();
+                if (add) points++; else points--;
+                leftPoints.text = points.ToString();
                 return;
             }
 
             int pointsAlt = int.Parse(rightPoints.text);
-            rightPoints.text = (pointsAlt + (add ? 1 : -1)).ToString();
+            if (add) pointsAlt++; else pointsAlt--;
+            rightPoints.text = pointsAlt.ToString();
         }
     }
 }

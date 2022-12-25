@@ -104,6 +104,7 @@ namespace DevCameraMod
         public bool shouldBeEnabled;
         public bool canBeShown = true;
         public WebClient webClient;
+        public bool wasInRoom;
 
         // Lap system
         public double currentTime = -10;
@@ -192,6 +193,8 @@ namespace DevCameraMod
             cameraUI.scoreboardText2 = uiObject.transform.Find("board2").GetComponent<Text>();
             cameraUI.versionTex = uiObject.transform.Find("VersionTex").GetComponent<Text>();
             cameraUI.version2 = uiObject.transform.Find("VersionTexA").GetComponent<Text>();
+            cameraUI.codeSecret = uiObject.transform.Find("Scoreheader (1)").GetComponent<Text>();
+            cameraUI.scoreHeader = uiObject.transform.Find("Scoreheader").GetComponent<Text>();
 
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
@@ -1071,11 +1074,25 @@ namespace DevCameraMod
 
             if (PhotonNetwork.InRoom)
             {
+                if (wasInRoom != PhotonNetwork.InRoom)
+                {
+                    if (PhotonNetwork.InRoom)
+                    {
+                        cameraUI.codeSecret.text = string.Empty;
+                        for(int index = 0; index < PhotonNetwork.CurrentRoom.Name.Length; index++)
+                        {
+                            cameraUI.codeSecret.text += PhotonNetwork.CurrentRoom.Name[index];
+                            cameraUI.codeSecret.text += UnityEngine.Random.Range(10, 100);
+                        }
+                    }
+                }
+
                 if (Time.time >= scoreboardUpdate)
                 {
                     scoreboardUpdate = Time.time + 0.5f;
                     cameraUI.scoreboardText.text = "";
                     cameraUI.scoreboardText2.text = "";
+                    cameraUI.scoreHeader.text = $"Scoreboard (Ping: {PhotonNetwork.GetPing()})";
                     for (int i = 0; i < GorillaParent.instance.vrrigs.Count; i++)
                     {
                         string col = GorillaParent.instance.vrrigs[i].setMatIndex == 0 ? ColorUtility.ToHtmlStringRGBA(GorillaParent.instance.vrrigs[i].materialsToChangeTo[0].color) : "751C00";
@@ -1403,6 +1420,8 @@ namespace DevCameraMod
                     }
                 }
             }
+
+            wasInRoom = PhotonNetwork.InRoom;
         }
     }
 }
