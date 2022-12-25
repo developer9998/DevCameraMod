@@ -1,1 +1,1 @@
-﻿<color=yellow>Pugg, are you a silly monke?</color>
+﻿<color=red>Pugg, are you a silly monke?</color>
