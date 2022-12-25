@@ -124,7 +124,8 @@ namespace DevCameraMod
             SelectedPlayer,
             ActivitySpan,
             SurvivorFocus,
-            LavaFocus
+            LavaFocus,
+            ArenaFocus
         }
 
         public Dictionary<CameraModes, string> fixedCameraModeName = new Dictionary<CameraModes, string>()
@@ -159,10 +160,10 @@ namespace DevCameraMod
 
             CanChangeMode = true;
 
-            fixedCameraNames.Add("Spectator");
-            fixedCameras.Add(camera.cullingMask);
             fixedCameraNames.Add("VR");
             fixedCameras.Add(GorillaLocomotion.Player.Instance.GetComponentInChildren<Camera>().cullingMask);
+            fixedCameraNames.Add("Spectator");
+            fixedCameras.Add(camera.cullingMask);
 
             cameraUI = new CameraUI();
 
@@ -202,6 +203,7 @@ namespace DevCameraMod
             playerListener = GorillaLocomotion.Player.Instance.GetComponentInChildren<AudioListener>();
             cameraListener = camera.gameObject.AddComponent<AudioListener>();
             Debug.unityLogger.logEnabled = true;
+            camera.cullingMask = fixedCameras[intMask];
 
             cameraListener.enabled = false;
             Initialized = true;
