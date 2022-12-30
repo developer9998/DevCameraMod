@@ -14,6 +14,8 @@ using UnityEngine.InputSystem;
 using System.Net;
 using System.Threading;
 using Photon.Voice.PUN;
+using System.Net.Http;
+using Photon.Voice;
 
 namespace DevCameraMod
 {
@@ -105,6 +107,7 @@ namespace DevCameraMod
         public bool canBeShown = true;
         public WebClient webClient;
         public bool wasInRoom;
+        public bool isAllowed;
 
         // Lap system
         public double currentTime = -10;
@@ -199,7 +202,6 @@ namespace DevCameraMod
             cameraUI.canvas.enabled = false;
             cameraUI.leftTeam.text = "null";
             cameraUI.rightTeam.text = "null";
-            cameraUI.version2.text = PluginInfo.Name + " v" + PluginInfo.Version;
 
             UpdateLap();
 
@@ -215,10 +217,25 @@ namespace DevCameraMod
             thread.Start();
         }
 
+        public async void GetAllowed()
+        {
+            HttpClient client = new HttpClient();
+            string result = await client.GetStringAsync("https://github.com/developer9998/DevCameraMod/blob/main/DevCameraMod/DevCameraMod/Allowed.txt");
+            using (StringReader reader = new StringReader(result))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null) if (PhotonNetwork.LocalPlayer.UserId == line) isAllowed = true;
+            }
+
+            client.Dispose();
+        }
+
         void UpdateThead()
         {
-            Thread.Sleep(1000);
+            Thread.Sleep(10000);
+            GetAllowed();
             webClient = new WebClient();
+            cameraUI.version2.text = PluginInfo.Name + $"{(isAllowed ? string.Empty : "Free")} v" + PluginInfo.Version;
             try
             {
                 while (true)
@@ -1064,7 +1081,7 @@ namespace DevCameraMod
                 if (type != null) GorillaTagger.Instance.offlineVRRig.tagSound.PlayOneShot(type);
             }
 
-            if (Keyboard.current.f4Key.wasPressedThisFrame)
+            if (Keyboard.current.f4Key.wasPressedThisFrame && isAllowed)
             {
                 canBeShown = !canBeShown;
                 if (canBeShown) cameraUI.canvas.enabled = shouldBeEnabled;
