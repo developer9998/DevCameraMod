@@ -1055,8 +1055,8 @@ namespace DevCameraMod
                 OnFirstPersonToggle();
             }
 
-            if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 2, 7);
-            if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 2, 7);
+            if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) SwitchModePress(true, 7, 7);
+            if (Keyboard.current.rightCtrlKey.wasPressedThisFrame) SwitchModePress(false, 7, 7);
 
             if (Keyboard.current.f3Key.wasPressedThisFrame)
             {

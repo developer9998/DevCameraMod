@@ -9,6 +9,7 @@ namespace DevCameraMod.HarmonyPatches.Patches
     {
         internal static void Prefix()
         {
+            if (!PhotonNetwork.InRoom) return;
             if (Plugin.Instance.intMode >= 3)
             {
                 Plugin.Instance.cameraMode = 0;
