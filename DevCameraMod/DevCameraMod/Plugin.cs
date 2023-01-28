@@ -16,6 +16,7 @@ using System.Threading;
 using Photon.Voice.PUN;
 using System.Net.Http;
 using Photon.Voice;
+using UnityEngine.Animations.Rigging;
 
 namespace DevCameraMod
 {
@@ -33,6 +34,7 @@ namespace DevCameraMod
         public GameObject nametagBase;
         public AudioListener playerListener;
         public AudioListener cameraListener;
+        public GorillaCameraFollow follower;
 
         // Camera objects
         public Camera camera;
@@ -107,7 +109,7 @@ namespace DevCameraMod
         public bool canBeShown = true;
         public WebClient webClient;
         public bool wasInRoom;
-        public bool isAllowed;
+        public bool isAllowed = true;
 
         // Lap system
         public double currentTime = -10;
@@ -198,10 +200,13 @@ namespace DevCameraMod
             cameraUI.version2 = uiObject.transform.Find("VersionTexA").GetComponent<Text>();
             cameraUI.codeSecret = uiObject.transform.Find("Scoreheader (1)").GetComponent<Text>();
             cameraUI.scoreHeader = uiObject.transform.Find("Scoreheader").GetComponent<Text>();
+            cameraUI.Sponsors = uiObject.transform.Find("Sponsors");
+
+            follower = FindObjectOfType<GorillaCameraFollow>();
 
             cameraUI.canvas.enabled = false;
-            cameraUI.leftTeam.text = "null";
-            cameraUI.rightTeam.text = "null";
+            cameraUI.leftTeam.text = "LEFTTEAM";
+            cameraUI.rightTeam.text = "RIGHTTEAM";
 
             UpdateLap();
 
@@ -217,23 +222,9 @@ namespace DevCameraMod
             thread.Start();
         }
 
-        public async void GetAllowed()
-        {
-            HttpClient client = new HttpClient();
-            string result = await client.GetStringAsync("https://github.com/developer9998/DevCameraMod/blob/main/DevCameraMod/DevCameraMod/Allowed.txt");
-            using (StringReader reader = new StringReader(result))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null) if (PhotonNetwork.LocalPlayer.UserId == line) isAllowed = true;
-            }
-
-            client.Dispose();
-        }
-
         void UpdateThead()
         {
             Thread.Sleep(10000);
-            GetAllowed();
             webClient = new WebClient();
             cameraUI.version2.text = PluginInfo.Name + $"{(isAllowed ? string.Empty : "Free")} v" + PluginInfo.Version;
             try
@@ -268,7 +259,7 @@ namespace DevCameraMod
             OnModeChange();
         }
 
-        [STAThread]
+        public bool show;
         protected void OnGUI()
         {
             if (ShowMenu)
@@ -321,11 +312,11 @@ namespace DevCameraMod
 
                         if (cameraMode == CameraModes.Freecam)
                         {
-                            GUI.Label(new Rect(60, optionPosition, 160, 20), $"Camera Speed: {(currentSpeed.ToString().Length >= 3 ? currentSpeed.ToString().Substring(0, 3) : currentSpeed.ToString())}");
+                            GUI.Label(new Rect(60, optionPosition, 160, 20), $"Speed: {(currentSpeed.ToString().Length >= 3 ? currentSpeed.ToString().Substring(0, 3) : currentSpeed.ToString())}");
                             currentSpeed = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), currentSpeed, 0, 5);
                             optionPosition += 50;
                         }
-
+                        //                                                 first            second
                         GUI.Label(new Rect(50, optionPosition, 160, 70), $"Position         Rotation");
                         cameraLerp = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), cameraLerp, 0.02f, 0.3f);
                         quatLerp = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), quatLerp, 0.02f, 0.3f);
@@ -336,16 +327,19 @@ namespace DevCameraMod
                         FOV = GUI.HorizontalSlider(new Rect(25 + 5, optionPosition + 30, 160 / 2, 20), FOV, 30f, 160f);
                         clipPlane = GUI.HorizontalSlider(new Rect(180 - 65, optionPosition + 30, 160 / 2, 20), clipPlane, 0.01f, 0.5f);
 
-                        optionPosition += 50;
+                        optionPosition += 40;
                         GUI.Label(new Rect(60, optionPosition, 160, 20), $"Camera listener: {(listener ? "On" : "Off")}");
                         float listenerFloat = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), listener == true ? 1 : 0, 0, 1);
 
-                        optionPosition += 50;
-                        GUI.Label(new Rect(60, optionPosition, 160, 20), $"Left team: {cameraUI.LeftTeamName}");
-                        string teamName = GUI.TextArea(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), cameraUI.LeftTeamName, 200);
+                        optionPosition += 40;
+                        GUI.Label(new Rect(60, optionPosition, 160, 20), $"CGT sponsors: {(show ? "On" : "Off")}");
+                        float sponsor = GUI.HorizontalSlider(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), show == true ? 1 : 0, 0, 1);
 
-                        optionPosition += 50;
-                        GUI.Label(new Rect(60, optionPosition, 160, 20), $"Right team: {cameraUI.LeftTeamName}");
+                        optionPosition += 45;
+                        GUI.Label(new Rect(45, optionPosition, 160, 60), $"Left team: {cameraUI.LeftTeamName}\nRight team: {cameraUI.RightTeamName}");
+                        optionPosition += 10;
+                        string teamName = GUI.TextArea(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), cameraUI.LeftTeamName, 200);
+                        optionPosition += 22.5f;
                         string rightTeamName = GUI.TextArea(new Rect(25 + 10 / 2, optionPosition + 30, 170, 20), cameraUI.RightTeamName, 200);
 
                         if (teamName.Length <= 7 && lastLeftName != teamName)
@@ -363,6 +357,9 @@ namespace DevCameraMod
                         }
 
                         listener = listenerFloat == 1;
+                        show = sponsor == 1;
+
+                        if (cameraUI.Sponsors != null) cameraUI.Sponsors.gameObject.SetActive(show);
 
                         canvasSize = optionPosition;
                     }
@@ -462,6 +459,14 @@ namespace DevCameraMod
             camera.gameObject.SetActive(cameraMode != CameraModes.FP);
 
             virtualCamera.enabled = cameraMode == CameraModes.Default;
+
+            if (cameraMode == CameraModes.Default)
+            {
+                follower.transform.SetParent(GorillaLocomotion.Player.Instance.headCollider.transform, false);
+                follower.playerHead = GorillaLocomotion.Player.Instance.headCollider.transform;
+            }
+            if (cameraMode == CameraModes.SelectedPlayer || cameraMode == CameraModes.DefEnhanced || cameraMode == CameraModes.LavaFocus || cameraMode == CameraModes.SurvivorFocus || cameraMode == CameraModes.ActivitySpan) virtualCamera.enabled = true;
+
             cameraPosition = camera.transform.position;
             cameraRotation = camera.transform.eulerAngles;
             finalPos = cameraPosition;
@@ -1306,6 +1311,10 @@ namespace DevCameraMod
                                         try { if (cosmetic.transform.parent.parent.name == toRig.headMesh.name) cosmetic.layer = 0; } catch (System.Exception) { }
                                     }
                                 }
+
+                                follower.transform.SetParent(toRig.head.rigTarget.transform, false);
+                                follower.playerHead = toRig.head.rigTarget.transform;
+                                virtualCamera.enabled = true;
                             }
                             catch(System.Exception e)
                             {
@@ -1345,6 +1354,8 @@ namespace DevCameraMod
                                         try { if (cosmetic.transform.parent.parent.name == toRig.headMesh.name) cosmetic.layer = 27; } catch (System.Exception){ }
                                     }
                                 }
+
+                                virtualCamera.enabled = false;
                             }
                             catch (System.Exception e)
                             {
@@ -1378,8 +1389,10 @@ namespace DevCameraMod
                     finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
                     finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp - Time.deltaTime);
 
-                    camera.transform.position = finalPos;
-                    camera.transform.rotation = finalcR3;
+                    //camera.transform.position = finalPos;
+                    //camera.transform.rotation = finalcR3;
+                    follower.transform.SetParent(GorillaTagger.Instance.offlineVRRig.head.rigTarget.transform, false);
+                    follower.playerHead = GorillaTagger.Instance.offlineVRRig.head.rigTarget.transform;
                 }
             }
 
@@ -1407,8 +1420,11 @@ namespace DevCameraMod
                         finalPos = Vector3.Lerp(finalPos, cameraPosition, cameraLerp - Time.deltaTime);
                         finalcR3 = Quaternion.Slerp(finalcR3, cR3, quatLerp - Time.deltaTime);
 
-                        camera.transform.position = finalPos;
-                        camera.transform.rotation = finalcR3;
+                        //camera.transform.position = finalPos;
+                        //camera.transform.rotation = finalcR3;
+                        follower.transform.SetParent(rig.head.rigTarget.transform, false);
+                        follower.playerHead = rig.head.rigTarget.transform;
+                        virtualCamera.enabled = true;
                     }
                     else
                     {
@@ -1434,6 +1450,7 @@ namespace DevCameraMod
                         camera.transform.SetParent(GorillaParent.instance.vrrigs[rigtofollow].headMesh.transform, true);
                         camera.transform.localPosition = Vector3.Lerp(camera.transform.localPosition, new Vector3(0, 0.12f, 0), cameraLerp);
                         camera.transform.localRotation = Quaternion.Slerp(camera.transform.localRotation, Quaternion.identity, quatLerp);
+                        virtualCamera.enabled = false;
                     }
                 }
             }
